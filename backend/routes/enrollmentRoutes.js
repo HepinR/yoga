@@ -1,17 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const pool = require('../config/db');
 
 // Get all batches
-router.get('/batches', (req, res) => {
-    const query = 'SELECT * FROM batches';
-    db.query(query, (err, results) => {
-        if (err) {
-            res.status(500).json({ error: 'Failed to fetch batches' });
-        } else {
-            res.json(results);
-        }
-    });
+router.get('/batches', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM batches2');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching batches:', error);
+        res.status(500).json({ error: 'Failed to fetch batch times' });
+    }
 });
 
 // Test route
@@ -19,74 +18,73 @@ router.get('/test', (req, res) => {
     res.json({ message: 'Enrollment routes working' });
 });
 
-// Enroll user
+// Create enrollment
 router.post('/enroll', async (req, res) => {
-    const { name, age, email, phone, batchId } = req.body;
-
-    if (age < 18 || age > 65) {
-        return res.status(400).json({ error: 'Age must be between 18 and 65' });
-    }
-
+    const client = await pool.connect(); 
+    
     try {
-        db.beginTransaction(async (err) => {
-            if (err) throw err;
+        const { name, age, email, phone, batchId } = req.body;
+        
+        await client.query('BEGIN'); 
 
-            // Insert user
-            const userQuery = 'INSERT INTO users1 (name, age, email, phone) VALUES (?, ?, ?, ?)';
-            db.query(userQuery, [name, age, email, phone], async (err, userResult) => {
-                if (err) {
-                    return db.rollback(() => {
-                        res.status(400).json({ error: 'User creation failed' });
-                    });
-                }
+        // Insert user
+        const userResult = await client.query(
+            'INSERT INTO users3 (name, age, email, phone) VALUES ($1, $2, $3, $4) RETURNING id',
+            [name, age, email, phone]
+        );
 
-                const userId = userResult.insertId;
+        // Insert enrollment
+        const enrollmentResult = await client.query(
+            'INSERT INTO enrollments3 (user_id, batch_id) VALUES ($1, $2) RETURNING id',
+            [userResult.rows[0].id, batchId]
+        );
 
-                // Mock payment function
-                const paymentResult = {
-                    status: 'success',
-                    message: 'Payment successful',
-                    paymentId: 'PAY_' + Math.random().toString(36).substr(2, 9)
-                };
+        // Update batch
+        await client.query(
+            'UPDATE batches2 SET current_enrollments = current_enrollments + 1 WHERE id = $1',
+            [batchId]
+        );
 
-                if (paymentResult.status === 'success') {
-                    // Create enrollment
-                    const enrollmentQuery = 'INSERT INTO enrollments (user_id, batch_id, enrollment_date, payment_status, payment_id) VALUES (?, ?, CURDATE(), ?, ?)';
-                    db.query(enrollmentQuery, [userId, batchId, 'completed', paymentResult.paymentId], (err, enrollResult) => {
-                        if (err) {
-                            return db.rollback(() => {
-                                res.status(400).json({ error: 'Enrollment failed' });
-                            });
-                        }
-
-                        // Record payment
-                        const paymentQuery = 'INSERT INTO payments1 (enrollment_id, amount, payment_status, payment_method, transaction_id) VALUES (?, 500, "completed", "online", ?)';
-                        db.query(paymentQuery, [enrollResult.insertId, paymentResult.paymentId], (err) => {
-                            if (err) {
-                                return db.rollback(() => {
-                                    res.status(400).json({ error: 'Payment recording failed' });
-                                });
-                            }
-
-                            db.commit((err) => {
-                                if (err) {
-                                    return db.rollback(() => {
-                                        res.status(500).json({ error: 'Transaction failed' });
-                                    });
-                                }
-                                res.json({ success: true, message: 'Enrollment successful' });
-                            });
-                        });
-                    });
-                } else {
-                    db.rollback(() => {
-                        res.status(400).json({ error: 'Payment failed' });
-                    });
-                }
-            });
+        await client.query('COMMIT');
+        
+        res.json({
+            success: true,
+            enrollmentId: enrollmentResult.rows[0].id,
+            message: 'Enrollment successful'
         });
+
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        await client.query('ROLLBACK');
+        console.error('Enrollment error:', error);
+        res.status(500).json({ 
+            error: 'Enrollment failed',
+            details: error.message,
+            code: error.code 
+        });
+    } finally {
+        client.release();
+    }
+});
+
+// Get all enrollments
+router.get('/enrollments', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                e.id as enrollment_id,
+                u.name,
+                u.email,
+                u.phone,
+                b.time_slot,
+                e.enrollment_date
+            FROM enrollments3 e
+            JOIN users3 u ON e.user_id = u.id
+            JOIN batches2 b ON e.batch_id = b.id
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching enrollments:', error);
+        res.status(500).json({ error: 'Failed to fetch enrollments' });
     }
 });
 
