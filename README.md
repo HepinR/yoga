@@ -31,32 +31,8 @@ live web: [https://yogafront.netlify.app]
 
 ### ER Diagram Representation
 
-[USERS]
-- id (PK)
-- name
-- age
-- email
-- phone
-- created_at
-    |
-    | 1:N
-    ↓
-[ENROLLMENTS]
-- id (PK)
-- user_id (FK)
-- batch_id (FK)
-- enrollment_date
-- payment_amount
-- payment_status
-    ↑
-    | N:1
-    |
-[BATCHES]
-- id (PK)
-- time_slot
-- capacity
-- current_enrollments
-- created_at
+![image](https://github.com/user-attachments/assets/d7175a42-70a1-4c9a-95a1-697eacc370bb)
+
 
 
 ## API Endpoints
