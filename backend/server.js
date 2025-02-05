@@ -7,7 +7,6 @@ const enrollmentRoutes = require('./routes/enrollmentRoutes');
 dotenv.config();
 
 const app = express();
-// Let Render assign the port or use 5000 for local development
 const PORT = process.env.PORT || 5001;
 
 const allowedOrigins = [
