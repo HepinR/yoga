@@ -75,7 +75,6 @@ const PaymentConfirmation = ({ open, onClose, enrollmentDetails }) => {
                         <DetailRow label="Name" value={enrollmentDetails.name} />
                         <DetailRow label="Batch Time" value={enrollmentDetails.batchTime} />
                         <DetailRow label="Enrollment Date" value={enrollmentDetails.enrollmentDate} />
-                        <DetailRow label="Payment ID" value={enrollmentDetails.paymentId} />
                         <DetailRow label="Amount Paid" value="₹500" />
                         <DetailRow 
                             label="Status" 
