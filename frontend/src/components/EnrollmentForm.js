@@ -67,7 +67,6 @@ const EnrollmentForm = () => {
                 setEnrollmentDetails({
                     ...formData,
                     batchTime: selectedBatch?.time_slot,
-                    paymentId: response.data.paymentId,
                     enrollmentDate: new Date().toLocaleDateString()
                 });
                 setShowConfirmation(true);
@@ -80,10 +79,26 @@ const EnrollmentForm = () => {
     };
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'phone') {
+            if (!/^\d*$/.test(value) || value.length > 10) {
+                return;
+            }
+        }
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
+
+        setError('');
+        
+        if (name === 'email' && value && !validateEmail(value)) {
+            setError('Please enter a valid email address');
+        }
+        if (name === 'phone' && value && !validatePhone(value)) {
+            setError('Phone number must be 10 digits');
+        }
     };
 
     const handleNext = () => {
@@ -96,6 +111,16 @@ const EnrollmentForm = () => {
         setActiveStep((prevStep) => prevStep - 1);
     };
 
+    const validateEmail = (email) => {
+        const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+        return emailRegex.test(email);
+    };
+
+    const validatePhone = (phone) => {
+        const phoneRegex = /^[0-9]{10}$/;
+        return phoneRegex.test(phone);
+    };
+
     const validateStep = (step) => {
         switch (step) {
             case 0:
@@ -105,6 +130,14 @@ const EnrollmentForm = () => {
                 }
                 if (formData.age < 18 || formData.age > 65) {
                     setError('Age must be between 18 and 65');
+                    return false;
+                }
+                if (!validateEmail(formData.email)) {
+                    setError('Please enter a valid email address');
+                    return false;
+                }
+                if (!validatePhone(formData.phone)) {
+                    setError('Phone number must be 10 digits');
                     return false;
                 }
                 break;
@@ -160,6 +193,9 @@ const EnrollmentForm = () => {
                             onChange={handleChange}
                             required
                             autoComplete="email"
+                            error={formData.email && !validateEmail(formData.email)}
+                            helperText={formData.email && !validateEmail(formData.email) ? 
+                                "Please enter a valid email address" : ""}
                             sx={{ mb: 2}}
                         />
                         <TextField
@@ -170,6 +206,13 @@ const EnrollmentForm = () => {
                             onChange={handleChange}
                             required
                             autoComplete="tel"
+                            inputProps={{
+                                maxLength: 10,
+                                pattern: "[0-9]*"
+                            }}
+                            error={formData.phone && !validatePhone(formData.phone)}
+                            helperText={formData.phone && !validatePhone(formData.phone) ? 
+                                "Phone number must be 10 digits" : ""}
                             sx={{ mb: 2}}
                         />
                     </Box>
