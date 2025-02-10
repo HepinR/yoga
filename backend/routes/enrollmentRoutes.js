@@ -45,11 +45,24 @@ router.post('/enroll', async (req, res) => {
             [batchId]
         );
 
+        // Generate payment ID
+        const randomNum = Math.floor(1000000 + Math.random() * 9000000);
+        const paymentId = `YOGA-${randomNum}`;
+
+        // Insert into payments table
+        await client.query(
+            `INSERT INTO payments 
+            (payment_id, enrollment_id, user_id, amount, status) 
+            VALUES ($1, $2, $3, $4, $5)`,
+            [paymentId, enrollmentResult.rows[0].id, userResult.rows[0].id, 500, 'completed']
+        );
+
         await client.query('COMMIT');
         
         res.json({
             success: true,
             enrollmentId: enrollmentResult.rows[0].id,
+            paymentId: paymentId,
             message: 'Enrollment successful'
         });
 
