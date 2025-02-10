@@ -31,7 +31,8 @@ live web: [https://yogafront.netlify.app]
 
 ### ER Diagram Representation
 
-![image](https://github.com/user-attachments/assets/d7175a42-70a1-4c9a-95a1-697eacc370bb)
+![image](https://github.com/user-attachments/assets/ba23f1d1-9c9a-44d0-b578-8f2700bb426e)
+
 
 
 
