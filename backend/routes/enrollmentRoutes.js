@@ -51,7 +51,7 @@ router.post('/enroll', async (req, res) => {
 
         // Insert into payments table
         await client.query(
-            `INSERT INTO payments 
+            `INSERT INTO payments3 
             (payment_id, enrollment_id, user_id, amount, status) 
             VALUES ($1, $2, $3, $4, $5)`,
             [paymentId, enrollmentResult.rows[0].id, userResult.rows[0].id, 500, 'completed']
